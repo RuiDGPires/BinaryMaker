@@ -50,7 +50,7 @@ void *mallocWithError(size_t size){
   return p;
 }
 
-#define BUFFER_SIZE 300
+#define BUFFER_SIZE 9 
 #define DUMP_SIZE BUFFER_SIZE / 3
 
 pthread_mutex_t reading_mutex, writing_mutex;
@@ -86,10 +86,10 @@ int readToCyclicBuffer(FILE *file){
 	int c = 0;
 
 	if (needs_dividing){
-		c = fread(&reading_buffer[reading_producer_index], distance_to_end, sizeof(char), file);
-		c += fread(reading_buffer, DUMP_SIZE - distance_to_end, sizeof(char), file);
+		c = fread(&reading_buffer[reading_producer_index], sizeof(char), distance_to_end, file);
+		c += fread(reading_buffer, sizeof(char), DUMP_SIZE - distance_to_end, file);
 		reading_producer_index = DUMP_SIZE - distance_to_end;
-	}	else{
+	}else{
 		c = fread(&reading_buffer[reading_producer_index], DUMP_SIZE, sizeof(char), file);
 		reading_producer_index = (reading_producer_index + DUMP_SIZE) % BUFFER_SIZE;
 	}
@@ -122,7 +122,7 @@ void *readFile(void *arg){
 
 	// Check if any error occured
 	if (ferror(file)) THROW_ERROR("An error occured while reading file");
-	
+
 	fclose(file);	
 	reading_buffer_free = TRUE;
 	signalCondition(&reading_can_consume);
@@ -142,49 +142,54 @@ u8 convertCharsToU8(const char chars[]){
 			result |= (u8) ((int)chars[i] - (int) 'a' + 10);
 		else THROW_ERROR("UNKOWN CHARACTER: %c", chars[i]);	
 	}
-	if (chars[2] != ' ') THROW_ERROR("INVALID SYNTAX");
 	return result;
 }
 
+char vals[2];
 void *convertFile(void *arg){
 	(void) arg;
-	char vals[3];
+	u8 count = 0;
 
-	while(!reading_buffer_free && getDistanceInBuffer(reading_consumer_index, reading_producer_index) != 1){
+	while(!reading_buffer_free || getDistanceInBuffer(reading_consumer_index, reading_producer_index) != 1){
 		// READ CHARS FROM READING BUFFER
-		for (int i = 0 ; i < 3; i++){
-			mutexLock(&reading_mutex);
-			u32 dist = getDistanceInBuffer(reading_consumer_index, reading_producer_index);
+		mutexLock(&reading_mutex);
+		u32 dist = getDistanceInBuffer(reading_consumer_index, reading_producer_index);
 
-			if (dist == 1 && reading_buffer_free) THROW_ERROR("END OF FILE REACHED");
+		if (dist == 1 && reading_buffer_free) THROW_ERROR("END OF FILE REACHED");
 
-			while(!reading_buffer_free && dist == 1){
-				waitCondition(&reading_can_consume, &reading_mutex);
-				dist = getDistanceInBuffer(reading_consumer_index, reading_producer_index);
-			}
-
-			reading_consumer_index = (reading_consumer_index + 1) % BUFFER_SIZE;
-			vals[i] = reading_buffer[reading_consumer_index];
-			signalCondition(&reading_can_produce);
-			mutexUnlock(&reading_mutex);
+		while(!reading_buffer_free && dist == 1){
+			waitCondition(&reading_can_consume, &reading_mutex);
+			dist = getDistanceInBuffer(reading_consumer_index, reading_producer_index);
 		}
 
-		u8 val = convertCharsToU8(vals);
+		reading_consumer_index = (reading_consumer_index + 1) % BUFFER_SIZE;
 
-
-		// WRITE CONVERTED CHARS TO WRITING BUFFER
-		mutexLock(&writing_mutex);
+		char c = reading_buffer[reading_consumer_index];
+		if (c != ' ' && c != 0 && c != '\r' && c != '\n' && c != '\t')
+			vals[count++] = c;
 		
-		while(getDistanceInBuffer(writing_producer_index, writing_consumer_index) == 0)
-			waitCondition(&writing_can_produce, &writing_mutex);
+		signalCondition(&reading_can_produce);
+		mutexUnlock(&reading_mutex);
 
-		writing_buffer[writing_producer_index] = val;
-		writing_producer_index = (writing_producer_index + 1) % BUFFER_SIZE;
+		if (count == 2){
+			u8 val = convertCharsToU8(vals);
 
-		signalCondition(&writing_can_consume);
-		mutexUnlock(&writing_mutex);
+			// WRITE CONVERTED CHARS TO WRITING BUFFER
+			mutexLock(&writing_mutex);
+				
+			while(getDistanceInBuffer(writing_producer_index, writing_consumer_index) == 1)
+				waitCondition(&writing_can_produce, &writing_mutex);
+
+			writing_buffer[writing_producer_index] = val;
+			writing_producer_index = (writing_producer_index + 1) % BUFFER_SIZE;
+
+			signalCondition(&writing_can_consume);
+			mutexUnlock(&writing_mutex);
+			count = 0;
+		}	
 	}
 	writing_buffer_free = TRUE;
+	signalCondition(&writing_can_consume);
 	pthread_exit(NULL);
 	return NULL;
 }
@@ -193,10 +198,10 @@ void writeFromCyclicBuffer(FILE *file, u32 size){
 	u8 tmp[size];
 
 	for (int i = 1; i <= size; i++)
-		tmp[i] = writing_buffer[(writing_consumer_index + i) % BUFFER_SIZE];
-
-	fwrite(tmp, size, sizeof(char), file);
-
+		tmp[i-1] = writing_buffer[(writing_consumer_index + i) % BUFFER_SIZE];
+	
+	fwrite(tmp, sizeof(u8), size, file);
+	writing_consumer_index = (writing_consumer_index + size)%BUFFER_SIZE;
 }
 
 void *writeFile(void *arg){
@@ -204,7 +209,7 @@ void *writeFile(void *arg){
 	FILE *file = fopen(filename, "wb");
 	if (file == NULL) THROW_ERROR("Unable to open file: %s", filename);
 
-	while(!writing_buffer_free && getDistanceInBuffer(writing_consumer_index, writing_producer_index) != 1){	
+	while(!writing_buffer_free || getDistanceInBuffer(writing_consumer_index, writing_producer_index) != 1){	
 		mutexLock(&writing_mutex);
 
 		while (!writing_buffer_free && getDistanceInBuffer(writing_consumer_index, writing_producer_index) < DUMP_SIZE)
@@ -213,7 +218,7 @@ void *writeFile(void *arg){
 		u32 size;
 		
 		if (writing_buffer_free)
-			size = getDistanceInBuffer(writing_consumer_index, writing_producer_index) -1;
+			size = getDistanceInBuffer(writing_consumer_index, writing_producer_index) - 1;
 		else
 			size = DUMP_SIZE;
 
@@ -222,7 +227,6 @@ void *writeFile(void *arg){
 		signalCondition(&writing_can_produce);
 		mutexUnlock(&writing_mutex);	
 	}
-
 	
 	fclose(file);	
 	pthread_exit(NULL);
