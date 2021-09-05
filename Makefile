@@ -1,5 +1,7 @@
 TARGET = txttobin
 FLAGS =
+fin =
+fout =
 
 default: debug
 
@@ -11,6 +13,9 @@ debug: $(TARGET)
 
 release: FLAGS += -O3
 release: $(TARGET)
+
+run:
+	./$(TARGET) $(fin) $(fout)
 
 clean:
 	rm -f $(TARGET)
