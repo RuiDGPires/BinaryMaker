@@ -50,7 +50,7 @@ void *mallocWithError(size_t size){
   return p;
 }
 
-#define BUFFER_SIZE 16 
+#define BUFFER_SIZE 6 
 #define DUMP_SIZE BUFFER_SIZE / 2 
 
 pthread_mutex_t reading_mutex, writing_mutex;
@@ -101,8 +101,9 @@ void *readFile(void *arg){
 		while (getDistanceInBuffer(reading_producer_index, reading_consumer_index) < c)
 			waitCondition(&reading_can_produce, &reading_mutex);
 
-		for (int i = 0; i < c; i++)
+		for (int i = 0; i < c; i++){
 			reading_buffer[(reading_producer_index + i) % BUFFER_SIZE] = tmp[i];
+		}
 
 		reading_producer_index = (reading_producer_index + c) % BUFFER_SIZE;
 
@@ -151,7 +152,8 @@ void *convertFile(void *arg){
 			waitCondition(&reading_can_consume, &reading_mutex);
 			dist = getDistanceInBuffer(reading_consumer_index, reading_producer_index);
 		}
-
+	
+		if (reading_buffer_free && dist == 1) continue;
 		reading_consumer_index = (reading_consumer_index + 1) % BUFFER_SIZE;
 
 		char c = reading_buffer[reading_consumer_index];
