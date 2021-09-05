@@ -50,8 +50,8 @@ void *mallocWithError(size_t size){
   return p;
 }
 
-#define BUFFER_SIZE 9 
-#define DUMP_SIZE BUFFER_SIZE / 3
+#define BUFFER_SIZE 16 
+#define DUMP_SIZE BUFFER_SIZE / 2 
 
 pthread_mutex_t reading_mutex, writing_mutex;
 pthread_cond_t reading_can_produce, reading_can_consume, writing_can_produce, writing_can_consume;
@@ -80,22 +80,6 @@ void signalCondition(pthread_cond_t *cond){
 }
 ///////////////////////////
 
-int readToCyclicBuffer(FILE *file){
-	u32 distance_to_end = BUFFER_SIZE - reading_producer_index;
-	int needs_dividing = distance_to_end < DUMP_SIZE;
-	int c = 0;
-
-	if (needs_dividing){
-		c = fread(&reading_buffer[reading_producer_index], sizeof(char), distance_to_end, file);
-		c += fread(reading_buffer, sizeof(char), DUMP_SIZE - distance_to_end, file);
-		reading_producer_index = DUMP_SIZE - distance_to_end;
-	}else{
-		c = fread(&reading_buffer[reading_producer_index], DUMP_SIZE, sizeof(char), file);
-		reading_producer_index = (reading_producer_index + DUMP_SIZE) % BUFFER_SIZE;
-	}
-
-	return c;
-}
 
 u32 getDistanceInBuffer(u32 a, u32 b){
 	return a <= b? b - a: BUFFER_SIZE - a + b;  
@@ -107,15 +91,21 @@ void *readFile(void *arg){
 	if (file == NULL) THROW_ERROR("Unable to open file: %s", filename);
 
 	int c;
+	char tmp[DUMP_SIZE];
 
-	do{	
+	do{
+		c =	fread(tmp, sizeof(char), DUMP_SIZE, file);
+
 		mutexLock(&reading_mutex);
 		// Wait until able to write
-		while (getDistanceInBuffer(reading_producer_index, reading_consumer_index) < DUMP_SIZE)
+		while (getDistanceInBuffer(reading_producer_index, reading_consumer_index) < c)
 			waitCondition(&reading_can_produce, &reading_mutex);
 
-		c = readToCyclicBuffer(file);
-	
+		for (int i = 0; i < c; i++)
+			reading_buffer[(reading_producer_index + i) % BUFFER_SIZE] = tmp[i];
+
+		reading_producer_index = (reading_producer_index + c) % BUFFER_SIZE;
+
 		signalCondition(&reading_can_consume);
 		mutexUnlock(&reading_mutex);	
 	}while(c != 0);
@@ -157,7 +147,7 @@ void *convertFile(void *arg){
 
 		if (dist == 1 && reading_buffer_free) THROW_ERROR("END OF FILE REACHED");
 
-		while(!reading_buffer_free && dist == 1){
+		while(!reading_buffer_free && dist <= 1){
 			waitCondition(&reading_can_consume, &reading_mutex);
 			dist = getDistanceInBuffer(reading_consumer_index, reading_producer_index);
 		}
