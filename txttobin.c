@@ -30,16 +30,16 @@ typedef uint8_t bool;
 #endif
 
 #define THROW_ERROR(...) \
-    {\
-			fflush(stdout);\
-			fprintf(stderr, "\033[0;31m"); \
-			fprintf(stderr, "Error"); \
-			PRINT_FUNCTION_NAME() \
-			fprintf(stderr, "\""); \
-			fprintf(stderr, __VA_ARGS__); \
-			fprintf(stderr, "\"\n\033[0m"); \
-			exit(-1);\
-    }
+	{\
+		fflush(stdout);\
+		fprintf(stderr, "\033[0;31m"); \
+		fprintf(stderr, "Error"); \
+		PRINT_FUNCTION_NAME() \
+		fprintf(stderr, "\""); \
+		fprintf(stderr, __VA_ARGS__); \
+		fprintf(stderr, "\"\n\033[0m"); \
+		exit(-1);\
+	}
 
 #define REPEAT(times)\
 	for (int _i = 0; _i < times; _i++)
