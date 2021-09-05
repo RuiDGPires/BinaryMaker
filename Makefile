@@ -15,7 +15,9 @@ release: FLAGS += -O3
 release: $(TARGET)
 
 run:
-	./$(TARGET) $(fin) $(fout)
+	echo
+	@./$(TARGET) $(fin) $(fout)
+	@hexdump $(fout)
 
 clean:
 	rm -f $(TARGET)
