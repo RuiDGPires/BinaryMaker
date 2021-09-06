@@ -57,7 +57,7 @@ void *mallocWithError(size_t size){
   return p;
 }
 
-#define BUFFER_SIZE 6 
+#define BUFFER_SIZE 200 
 #define DUMP_SIZE BUFFER_SIZE / 2 
 
 pthread_mutex_t reading_mutex, writing_mutex;
