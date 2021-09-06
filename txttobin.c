@@ -23,6 +23,18 @@ typedef uint8_t bool;
 #define FALSE 0
 #endif
 
+#define DISPLAY_HELP()\
+	{\
+	printf("       Text To Binary v0.1.0       \n");\
+	printf("___________________________________\n\n");\
+	printf("Usage:\n");\
+	printf("\ttxttobin <filein> <fileout>\n");\
+	printf("---\n");\
+	printf("\tfilein: Text file with hexadecimal numbers separated by whitespace or paragraphs\n");\
+	printf("\tfileout: Output binary\n");\
+	exit(0);\
+	}
+
 #ifdef DEBUG
 #define PRINT_FUNCTION_NAME() fprintf(stderr, " at %s:\n\t", __func__);
 #else
@@ -255,6 +267,11 @@ pthread_t *createWritingThread(char file[]){
 
 
 int main(int argc, char *argv[]){
+	if (argc == 2)
+		if (argv[1][0] == '-' && argv[1][1] == 'h') // PRINT HELP
+			DISPLAY_HELP();
+	
+
 	if (argc != 3) THROW_ERROR("Invalid number of command line arguments");
 	char *file_in = argv[1];
 	char *file_out = argv[2];	
