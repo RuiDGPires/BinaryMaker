@@ -15,7 +15,7 @@ release: FLAGS += -O3
 release: $(TARGET)
 
 run:
-	echo
+	@echo
 	@./$(TARGET) $(fin) $(fout)
 	@hexdump $(fout)
 
