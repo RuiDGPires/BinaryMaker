@@ -30,11 +30,11 @@
  *         ||                                                 ||
  *         ||                                                 \/ 
  * << reading_thread >>                              << writing_thread >>
+ *         /\                                                 ||
  *         ||                                                 ||
+ *         ||                                             Writes to
  *         ||                                                 ||
- *     Reads From                                         Writes to
- *         ||                                                 ||
- *         \/                                                 \/
+ *         ||                                                 \/
  *    (input file)                                      (output file)
  */
 
