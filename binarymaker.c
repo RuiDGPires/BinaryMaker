@@ -153,7 +153,7 @@ void *readFile(void *arg){
 	char tmp[DUMP_SIZE];
 
 	do{
-		c =	fread(tmp, sizeof(char), DUMP_SIZE, file);
+		c = fread(tmp, sizeof(char), DUMP_SIZE, file);
 
 		mutexLock(&reading_mutex);
 		// Wait until able to write
