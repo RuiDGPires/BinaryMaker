@@ -42,9 +42,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#ifdef WIN32 // UNIX 
+#ifdef WIN32 // WINDOWS 
 #include "winpthreads.h"
-#else // WINDOWS
+#else // UNIX
 #include <pthread.h>
 #endif
 
