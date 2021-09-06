@@ -3,7 +3,7 @@ FLAGS =
 fin =
 fout =
 
-default: debug
+default: release
 
 $(TARGET): txttobin.c
 	gcc $(FLAGS) -pthread $^ -o $(TARGET)
