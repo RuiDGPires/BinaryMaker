@@ -19,3 +19,4 @@ AA FF FF FF
 0000000 8090 2b10 ffaa ffff f990 0287 0600 c0f2
 0000010
 ```
+*note that the hexdump result may have digits swapped due to [endianness](https://en.wikipedia.org/wiki/Endianness), the binary file is normal*
