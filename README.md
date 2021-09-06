@@ -1,3 +1,3 @@
-# TxtToBinary
+# BinaryMaker
 
-Converts text files with hexadecimal notation to a corresponding binary file
+Tool for creating binary files from a text file of hexadecimal numbers
