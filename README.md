@@ -4,7 +4,7 @@ Tool for creating binary files from a text file of hexadecimal numbers
 
 ## Example
 
-*a.txt*
+>cat a.txt
 ```
 90 80 10 2B
 AA FF FF FF
