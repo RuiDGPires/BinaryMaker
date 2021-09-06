@@ -44,6 +44,13 @@ typedef uint8_t bool;
 #define REPEAT(times)\
 	for (int _i = 0; _i < times; _i++)
 
+#ifdef DEBUG
+#define DEBUG_PRINT(...)\
+	printf(__VA_ARGS__);
+#else
+#define DEBUG_PRINT(...)
+#endif
+
 void *mallocWithError(size_t size){
   void *p = malloc(size);
   if (p == NULL) THROW_ERROR("Unable to allocate memory");
@@ -98,7 +105,7 @@ void *readFile(void *arg){
 
 		mutexLock(&reading_mutex);
 		// Wait until able to write
-		while (getDistanceInBuffer(reading_producer_index, reading_consumer_index) < c)
+		while (getDistanceInBuffer(reading_producer_index, reading_consumer_index) < c + 1)
 			waitCondition(&reading_can_produce, &reading_mutex);
 
 		for (int i = 0; i < c; i++){
@@ -164,7 +171,7 @@ void *convertFile(void *arg){
 
 		if (count == 2){
 			u8 val = convertCharsToU8(vals);
-
+			DEBUG_PRINT("CONVERTED TO: %x\n", val);
 			// WRITE CONVERTED CHARS TO WRITING BUFFER
 			mutexLock(&writing_mutex);
 				
@@ -203,9 +210,11 @@ void *writeFile(void *arg){
 		}
 		
 
-		for (int i = 0; i < dist - 1; i++)
+		for (int i = 0; i < dist - 1; i++){
 			tmp[i] = writing_buffer[(writing_consumer_index + i + 1) % BUFFER_SIZE];
-	
+			DEBUG_PRINT("Writing: %x\n", tmp[i]);
+		}
+
 		writing_consumer_index = (writing_consumer_index + dist - 1)%BUFFER_SIZE;
 		signalCondition(&writing_can_produce);
 		mutexUnlock(&writing_mutex);	
