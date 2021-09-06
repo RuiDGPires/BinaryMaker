@@ -1,11 +1,11 @@
-TARGET = txttobin
+TARGET = binarymaker 
 FLAGS =
 fin =
 fout =
 
 default: release
 
-$(TARGET): txttobin.c
+$(TARGET): binarymaker.c
 	gcc $(FLAGS) -pthread $^ -o $(TARGET)
 
 debug: FLAGS += -O0 -Wall -g -D DEBUG
