@@ -12,7 +12,7 @@ AA FF FF FF
 00 06 F2 C0
 ```
 
->binarymaker a.txt b
+>./binarymaker a.txt b
 
 >hexdump b
 ```
