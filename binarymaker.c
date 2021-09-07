@@ -215,11 +215,13 @@ void *convertFile(void *arg){
 		reading_consumer_index = (reading_consumer_index + 1) % BUFFER_SIZE;
 
 		char c = reading_buffer[reading_consumer_index];
+
+		signalCondition(&reading_can_produce);
+		mutexUnlock(&reading_mutex);
+
 		if (c != ' ' && c != 0 && c != '\0' && c != '\r' && c != '\n' && c != '\t')
 			vals[count++] = c;
 		
-		signalCondition(&reading_can_produce);
-		mutexUnlock(&reading_mutex);
 
 		if (count == 2){
 			u8 val = convertCharsToU8(vals);
