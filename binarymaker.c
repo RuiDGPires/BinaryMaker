@@ -200,6 +200,7 @@ char vals[2];
 void *convertFile(void *arg){
 	(void) arg;
 	u8 count = 0;
+	bool is_comment = FALSE;
 
 	while(!reading_buffer_free || getDistanceInBuffer(reading_consumer_index, reading_producer_index) != 1){
 		// READ CHARS FROM READING BUFFER
@@ -219,7 +220,12 @@ void *convertFile(void *arg){
 		signalCondition(&reading_can_produce);
 		mutexUnlock(&reading_mutex);
 
-		if (c != ' ' && c != 0 && c != '\0' && c != '\r' && c != '\n' && c != '\t')
+		// Inverse is_comment
+		if (c == '#'){
+			is_comment = !is_comment;
+			continue;
+		}
+		if (!is_comment && c != ' ' && c != 0 && c != '\0' && c != '\r' && c != '\n' && c != '\t')
 			vals[count++] = c;
 		
 
